@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 
-gabungan_imputed = pd.read_csv("gabungan_imputed.csv")
+gabungan_imputed = pd.read_csv("dashboard/gabungan_imputed.csv")
 gabungan_imputed['dteday'] = pd.to_datetime(gabungan_imputed['dteday'])
 
 st.title("Analisis Data Bike Sharing")
