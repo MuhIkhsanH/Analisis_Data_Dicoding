@@ -1,5 +1,11 @@
+pip==24.0
 Babel==2.12.1
 matplotlib==3.8.0
+numpy==1.25.2
 pandas==2.1.4
 seaborn==0.13.0
 streamlit==1.30.0
+rich==13.9.4
+pygments==2.19.1
+markdown-it-py==3.0.0
+mdurl==0.1.2
