@@ -6,10 +6,8 @@ from babel.numbers import format_currency
 
 sns.set(style='dark')
 
-# Load dataset
 df = pd.read_csv("dashboard/gabungan_imputed.csv")
 
-# Pastikan kolom datetime sudah dalam format datetime
 datetime_columns = ["dteday"]
 df["dteday"] = pd.to_datetime(df["dteday"])
 
@@ -22,7 +20,7 @@ min_date = df["dteday"].min()
 max_date = df["dteday"].max()
 
 with st.sidebar:
-    st.image("dashboard/logo.png")  # Logo perusahaan
+    st.image("dashboard/logo.png")
     date_range = st.date_input("Rentang Waktu", min_value=min_date, max_value=max_date, value=[min_date, max_date])
     
     if isinstance(date_range, tuple) and len(date_range) == 2:
@@ -30,14 +28,11 @@ with st.sidebar:
     else:
         start_date, end_date = min_date, max_date
 
-# Filter data berdasarkan rentang waktu
 main_df = df[(df["dteday"] >= str(start_date)) & (df["dteday"] <= str(end_date))]
 
-# Helper functions
 def create_grouped_df(df, group_col, count_col):
     return df.groupby(group_col)[count_col].sum().reset_index()
 
-# Generate DataFrames
 daily_rentals_df = create_grouped_df(main_df, "dteday", "cnt_day")
 weather_rentals_df = create_grouped_df(main_df, "weathersit_day", "cnt_day")
 user_type_df = pd.DataFrame({
@@ -58,10 +53,8 @@ season_casual_day_df = create_grouped_df(main_df, "season_day", "casual_day")
 season_registered_hour_df = create_grouped_df(main_df, "season_hour", "registered_day")
 season_registered_day_df = create_grouped_df(main_df, "season_day", "registered_day")
 
-# Dashboard Header
 st.header("Bike Rental Dashboard 🚴")
 
-# Daily Rentals Visualization
 st.subheader("Daily Bike Rentals")
 col1, col2 = st.columns(2)
 
@@ -75,7 +68,6 @@ ax.set_xlabel("Date")
 ax.set_ylabel("Total Rentals")
 st.pyplot(fig)
 
-# Rentals by Category
 st.subheader("Rentals by Different Categories")
 def plot_bar_chart(df, x_col, y_col, x_label, y_label, palette):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -92,11 +84,9 @@ plot_bar_chart(season_day_df, "season_day", "cnt_day", "Season (Daily)", "Total 
 plot_bar_chart(weathersit_day_df, "weathersit_day", "cnt_day", "Weather (Daily)", "Total Rentals", "Blues")
 plot_bar_chart(workingday_day_df, "workingday_day", "cnt_day", "Working Day (Daily)", "Total Rentals", "Oranges")
 
-# Casual vs Registered Users
 st.subheader("Casual vs Registered Users")
 plot_bar_chart(user_type_df, "user_type", "count", "User Type", "Count", ["#90CAF9", "#F48FB1"])
 
-# Season vs Casual & Registered Users
 st.subheader("Season vs Casual & Registered Users")
 plot_bar_chart(season_casual_hour_df, "season_hour", "casual_day", "Season (Hourly)", "Casual Rentals", "Greens")
 plot_bar_chart(season_casual_day_df, "season_day", "casual_day", "Season (Daily)", "Casual Rentals", "Blues")
