@@ -22,7 +22,7 @@ min_date = df["dteday"].min()
 max_date = df["dteday"].max()
 
 with st.sidebar:
-    st.image("logo.png")  # Logo perusahaan
+    st.image("dashboard/logo.png")  # Logo perusahaan
     date_range = st.date_input("Rentang Waktu", min_value=min_date, max_value=max_date, value=[min_date, max_date])
     
     if isinstance(date_range, tuple) and len(date_range) == 2:
