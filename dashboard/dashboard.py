@@ -7,7 +7,7 @@ from babel.numbers import format_currency
 sns.set(style='dark')
 
 # Load dataset
-df = pd.read_csv("gabungan_imputed.csv")
+df = pd.read_csv("dashboard/gabungan_imputed.csv")
 
 # Pastikan kolom datetime sudah dalam format datetime
 datetime_columns = ["dteday"]
