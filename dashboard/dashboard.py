@@ -2,25 +2,27 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
-from babel.numbers import format_currency
+from babel.numbers import format_number
+import numpy as np
 
 sns.set(style='dark')
 
-df = pd.read_csv("dashboard/gabungan_imputed.csv")
+try:
+    df = pd.read_csv("dashboard/gabungan_imputed.csv")
+except FileNotFoundError:
+    st.error("File 'gabungan_imputed.csv' tidak ditemukan. Pastikan file berada di direktori yang benar.")
+    st.stop()
 
-datetime_columns = ["dteday"]
 df["dteday"] = pd.to_datetime(df["dteday"])
 
-# Urutkan data berdasarkan tanggal
 df.sort_values(by="dteday", inplace=True)
 df.reset_index(drop=True, inplace=True)
 
-# Menentukan rentang tanggal
 min_date = df["dteday"].min()
 max_date = df["dteday"].max()
 
 with st.sidebar:
-    st.image("dashboard/logo.png")
+    st.image("https://raw.githubusercontent.com/MuhIkhsanH/Analisis_Data_Dicoding/main/dashboard/logo.png")
     date_range = st.date_input("Rentang Waktu", min_value=min_date, max_value=max_date, value=[min_date, max_date])
     
     if isinstance(date_range, tuple) and len(date_range) == 2:
@@ -30,67 +32,89 @@ with st.sidebar:
 
 main_df = df[(df["dteday"] >= str(start_date)) & (df["dteday"] <= str(end_date))]
 
-def create_grouped_df(df, group_col, count_col):
-    return df.groupby(group_col)[count_col].sum().reset_index()
+st.title("🚲 Bike-Sharing Dashboard")
 
-daily_rentals_df = create_grouped_df(main_df, "dteday", "cnt_day")
-weather_rentals_df = create_grouped_df(main_df, "weathersit_day", "cnt_day")
-user_type_df = pd.DataFrame({
-    "user_type": ["Casual", "Registered"],
-    "count": [main_df["casual_day"].sum(), main_df["registered_day"].sum()]
-})
+total_rentals = main_df["cnt_day"].sum()
+st.metric("Total Rentals", value=format_number(total_rentals, locale="id_ID"))
 
-season_hour_df = create_grouped_df(main_df, "season_hour", "cnt_hour")
-weathersit_hour_df = create_grouped_df(main_df, "weathersit_hour", "cnt_hour")
-workingday_hour_df = create_grouped_df(main_df, "workingday_hour", "cnt_hour")
+monthly_weather_df_hour = main_df.groupby([
+    main_df['dteday'].dt.to_period('M'),
+    'weathersit_hour'
+]).agg({'cnt_hour': 'sum'}).reset_index()
 
-season_day_df = create_grouped_df(main_df, "season_day", "cnt_day")
-weathersit_day_df = create_grouped_df(main_df, "weathersit_day", "cnt_day")
-workingday_day_df = create_grouped_df(main_df, "workingday_day", "cnt_day")
+monthly_weather_df_hour.rename(columns={'dteday': 'month_period'}, inplace=True)
+monthly_weather_df_hour_pivot = monthly_weather_df_hour.pivot_table(
+    index='month_period',
+    columns='weathersit_hour',
+    values='cnt_hour',
+    aggfunc='sum'
+).fillna(0)
 
-season_casual_hour_df = create_grouped_df(main_df, "season_hour", "casual_day")
-season_casual_day_df = create_grouped_df(main_df, "season_day", "casual_day")
-season_registered_hour_df = create_grouped_df(main_df, "season_hour", "registered_day")
-season_registered_day_df = create_grouped_df(main_df, "season_day", "registered_day")
+tick_labels = monthly_weather_df_hour_pivot.index.to_timestamp().strftime('%B %Y')
 
-st.header("Bike Rental Dashboard 🚴")
+fig, ax = plt.subplots(figsize=(12, 6))
+colors = {1: '#72BCD4', 2: '#FFC107', 3: '#FF5733', 4: '#4CAF50'}
+for weather_type in monthly_weather_df_hour_pivot.columns:
+    ax.plot(
+        tick_labels,
+        monthly_weather_df_hour_pivot[weather_type],
+        marker='o',
+        label=f'Weather {weather_type}',
+        color=colors.get(weather_type),
+        linewidth=2
+    )
 
-st.subheader("Daily Bike Rentals")
-col1, col2 = st.columns(2)
-
-with col1:
-    total_rentals = daily_rentals_df["cnt_day"].sum()
-    st.metric("Total Rentals", value=total_rentals)
-
-fig, ax = plt.subplots(figsize=(16, 8))
-ax.plot(daily_rentals_df["dteday"], daily_rentals_df["cnt_day"], marker='o', linewidth=2, color="#90CAF9")
-ax.set_xlabel("Date")
-ax.set_ylabel("Total Rentals")
+ax.set_title("Penyewaan Berdasarkan Cuaca", fontsize=20)
+ax.set_xlabel("Month", fontsize=12)
+ax.set_ylabel("Number of Rentals (cnt_hour)", fontsize=12)
+ax.legend(title='Weather Type', loc='upper left')
+ax.grid(True)
+plt.xticks(rotation=45, ha='right', fontsize=10)
 st.pyplot(fig)
 
-st.subheader("Rentals by Different Categories")
-def plot_bar_chart(df, x_col, y_col, x_label, y_label, palette):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.barplot(x=x_col, y=y_col, data=df, palette=palette, ax=ax)
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    st.pyplot(fig)
+monthly_workingday_df = main_df.groupby([
+    main_df['dteday'].dt.to_period('M'),
+    'workingday_day'
+]).agg({'cnt_day': 'sum'}).reset_index()
 
-plot_bar_chart(weather_rentals_df, "weathersit_day", "cnt_day", "Weather Condition", "Total Rentals", "Blues")
-plot_bar_chart(season_hour_df, "season_hour", "cnt_hour", "Season (Hourly)", "Total Rentals", "Greens")
-plot_bar_chart(weathersit_hour_df, "weathersit_hour", "cnt_hour", "Weather (Hourly)", "Total Rentals", "Purples")
-plot_bar_chart(workingday_hour_df, "workingday_hour", "cnt_hour", "Working Day (Hourly)", "Total Rentals", "Oranges")
-plot_bar_chart(season_day_df, "season_day", "cnt_day", "Season (Daily)", "Total Rentals", "Reds")
-plot_bar_chart(weathersit_day_df, "weathersit_day", "cnt_day", "Weather (Daily)", "Total Rentals", "Blues")
-plot_bar_chart(workingday_day_df, "workingday_day", "cnt_day", "Working Day (Daily)", "Total Rentals", "Oranges")
+monthly_workingday_df.rename(columns={'dteday': 'month_period'}, inplace=True)
 
-st.subheader("Casual vs Registered Users")
-plot_bar_chart(user_type_df, "user_type", "count", "User Type", "Count", ["#90CAF9", "#F48FB1"])
+monthly_workingday_df_pivot = monthly_workingday_df.pivot_table(
+    index='month_period',
+    columns='workingday_day',
+    values='cnt_day',
+    aggfunc='sum'
+).fillna(0)
 
-st.subheader("Season vs Casual & Registered Users")
-plot_bar_chart(season_casual_hour_df, "season_hour", "casual_day", "Season (Hourly)", "Casual Rentals", "Greens")
-plot_bar_chart(season_casual_day_df, "season_day", "casual_day", "Season (Daily)", "Casual Rentals", "Blues")
-plot_bar_chart(season_registered_hour_df, "season_hour", "registered_day", "Season (Hourly)", "Registered Rentals", "Purples")
-plot_bar_chart(season_registered_day_df, "season_day", "registered_day", "Season (Daily)", "Registered Rentals", "Oranges")
+tick_labels = monthly_workingday_df_pivot.index.to_timestamp().strftime('%B %Y')
+
+fig, ax = plt.subplots(figsize=(12, 6))
+colors = {0: '#FF5733', 1: '#72BCD4'}
+
+for wd in monthly_workingday_df_pivot.columns:
+    ax.plot(
+        tick_labels,
+        monthly_workingday_df_pivot[wd],
+        marker='o',
+        label=f'Workingday {wd}',
+        color=colors.get(wd, None),
+        linewidth=2
+    )
+
+ax.set_title("Penyewaan Berdasarkan Hari Kerja", fontsize=20)
+ax.set_xlabel("Month", fontsize=12)
+ax.set_ylabel("Jumlah Penyewaan (cnt_day)", fontsize=12)
+ax.legend(title='Status Hari Kerja', loc='upper left')
+ax.grid(True)
+
+y_min, y_max = ax.get_ylim()
+y_ticks = np.linspace(y_min, y_max, num=5)
+y_ticks = np.round(y_ticks, -2)
+y_ticks = np.unique(y_ticks)
+ax.set_yticks(y_ticks)
+ax.set_yticklabels([format_number(int(y), locale="id_ID") for y in y_ticks])
+
+plt.xticks(rotation=45, ha='right', fontsize=10)
+st.pyplot(fig)
 
 st.caption("© 2025 Bike Rental Dashboard")
