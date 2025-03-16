@@ -52,6 +52,13 @@ monthly_weather_df_hour_pivot = monthly_weather_df_hour.pivot_table(
 
 tick_labels = monthly_weather_df_hour_pivot.index.to_timestamp().strftime('%B %Y')
 
+weather_labels = {
+    1: "Cerah / Berawan ringan",
+    2: "Berkabut / Mendung",
+    3: "Hujan ringan / Salju ringan",
+    4: "Hujan lebat / Badai / Salju deras"
+}
+
 fig, ax = plt.subplots(figsize=(12, 6))
 colors = {1: '#72BCD4', 2: '#FFC107', 3: '#FF5733', 4: '#4CAF50'}
 for weather_type in monthly_weather_df_hour_pivot.columns:
@@ -59,7 +66,7 @@ for weather_type in monthly_weather_df_hour_pivot.columns:
         tick_labels,
         monthly_weather_df_hour_pivot[weather_type],
         marker='o',
-        label=f'Weather {weather_type}',
+        label=weather_labels.get(weather_type, f'Weather {weather_type}'),
         color=colors.get(weather_type),
         linewidth=2
     )
@@ -67,7 +74,7 @@ for weather_type in monthly_weather_df_hour_pivot.columns:
 ax.set_title("Penyewaan Berdasarkan Cuaca", fontsize=20)
 ax.set_xlabel("Month", fontsize=12)
 ax.set_ylabel("Number of Rentals (cnt_hour)", fontsize=12)
-ax.legend(title='Weather Type', loc='upper left')
+ax.legend(title='Kondisi Cuaca', loc='upper left')
 ax.grid(True)
 plt.xticks(rotation=45, ha='right', fontsize=10)
 st.pyplot(fig)
@@ -88,6 +95,8 @@ monthly_workingday_df_pivot = monthly_workingday_df.pivot_table(
 
 tick_labels = monthly_workingday_df_pivot.index.to_timestamp().strftime('%B %Y')
 
+workingday_labels = {0: "Akhir Pekan / Hari Libur", 1: "Hari Kerja"}
+
 fig, ax = plt.subplots(figsize=(12, 6))
 colors = {0: '#FF5733', 1: '#72BCD4'}
 
@@ -96,7 +105,7 @@ for wd in monthly_workingday_df_pivot.columns:
         tick_labels,
         monthly_workingday_df_pivot[wd],
         marker='o',
-        label=f'Workingday {wd}',
+        label=workingday_labels.get(wd, f'Workingday {wd}'),
         color=colors.get(wd, None),
         linewidth=2
     )
@@ -104,7 +113,7 @@ for wd in monthly_workingday_df_pivot.columns:
 ax.set_title("Penyewaan Berdasarkan Hari Kerja", fontsize=20)
 ax.set_xlabel("Month", fontsize=12)
 ax.set_ylabel("Jumlah Penyewaan (cnt_day)", fontsize=12)
-ax.legend(title='Status Hari Kerja', loc='upper left')
+ax.legend(title='Jenis Hari', loc='upper left')
 ax.grid(True)
 
 y_min, y_max = ax.get_ylim()
