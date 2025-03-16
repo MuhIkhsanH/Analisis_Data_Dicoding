@@ -113,7 +113,7 @@ for wd in monthly_workingday_df_pivot.columns:
 ax.set_title("Penyewaan Berdasarkan Hari Kerja", fontsize=20)
 ax.set_xlabel("Month", fontsize=12)
 ax.set_ylabel("Jumlah Penyewaan (cnt_day)", fontsize=12)
-ax.legend(title='Jenis Hari', loc='upper left')
+ax.legend(title='Jenis Hari', loc='upper left', prop={'size': 8})
 ax.grid(True)
 
 y_min, y_max = ax.get_ylim()
